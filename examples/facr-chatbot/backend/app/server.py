@@ -25,11 +25,9 @@ from .title_agent import title_agent
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_DOCS_DIR = str(
-    Path(__file__).resolve().parent.parent.parent.parent.parent.parent
-    / "Podklady FAČR"
-    / "Podklady MD FAČR"
-)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+DEFAULT_DOCS_DIR = str(_PROJECT_ROOT / "data")
 
 
 class FACRServer(ChatKitServer[dict[str, Any]]):

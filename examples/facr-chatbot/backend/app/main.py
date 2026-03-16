@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -12,17 +13,22 @@ from chatkit.server import StreamingResult
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
-from starlette.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse, JSONResponse
 
 from .server import FACRServer, create_facr_server
 
-_env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+_project_root = Path(__file__).resolve().parent.parent.parent
+_env_path = _project_root / ".env"
 load_dotenv(_env_path)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 _facr_server: FACRServer | None = None
+
+_frontend_dist = _project_root / "frontend" / "dist"
+_serve_frontend = _frontend_dist.is_dir()
 
 
 @asynccontextmanager
@@ -79,3 +85,21 @@ async def health_check() -> dict[str, Any]:
             "chunks": chunk_count,
         },
     }
+
+
+if _serve_frontend:
+    app.mount(
+        "/assets",
+        StaticFiles(directory=str(_frontend_dist / "assets")),
+        name="static-assets",
+    )
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str) -> FileResponse:
+        """Serve frontend SPA — any non-API path returns index.html."""
+        file_path = _frontend_dist / full_path
+        if file_path.is_file():
+            return FileResponse(str(file_path))
+        return FileResponse(str(_frontend_dist / "index.html"))
+
+    logger.info("Serving frontend from %s", _frontend_dist)
