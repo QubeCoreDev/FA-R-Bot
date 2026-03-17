@@ -86,6 +86,7 @@ class KnowledgeBase:
     chunks: list[DocumentChunk] = field(default_factory=list)
     documents: list[DocumentInfo] = field(default_factory=list)
     embeddings: np.ndarray | None = None
+    _embeddings_normed: np.ndarray | None = None
     _client: OpenAI | None = None
 
     @property
@@ -93,6 +94,13 @@ class KnowledgeBase:
         if self._client is None:
             self._client = OpenAI()
         return self._client
+
+    @property
+    def embeddings_normed(self) -> np.ndarray | None:
+        if self._embeddings_normed is None and self.embeddings is not None:
+            norms = np.linalg.norm(self.embeddings, axis=1, keepdims=True)
+            self._embeddings_normed = self.embeddings / (norms + 1e-10)
+        return self._embeddings_normed
 
     @property
     def document_names(self) -> list[dict[str, str]]:
@@ -350,46 +358,45 @@ def _chunk_embed_text(chunk: DocumentChunk) -> str:
 # Search & retrieval functions
 # ---------------------------------------------------------------------------
 
-def search(kb: KnowledgeBase, query: str, top_k: int = 8) -> list[SearchResult]:
+def search(kb: KnowledgeBase, query: str, top_k: int = 6) -> list[SearchResult]:
     """Return the *top_k* most relevant chunks for *query*."""
-    if kb.embeddings is None or len(kb.chunks) == 0:
+    normed = kb.embeddings_normed
+    if normed is None or len(kb.chunks) == 0:
         return []
 
     response = kb.client.embeddings.create(model=EMBEDDING_MODEL, input=[query])
     q_vec = np.array(response.data[0].embedding, dtype=np.float32)
+    q_vec /= np.linalg.norm(q_vec) + 1e-10
 
-    norms = np.linalg.norm(kb.embeddings, axis=1)
-    q_norm = np.linalg.norm(q_vec)
-    similarities = (kb.embeddings @ q_vec) / (norms * q_norm + 1e-10)
-
-    top_indices = np.argsort(similarities)[::-1][:top_k]
+    similarities = normed @ q_vec
+    top_indices = np.argpartition(-similarities, top_k)[:top_k]
+    top_indices = top_indices[np.argsort(-similarities[top_indices])]
     return [
         SearchResult(chunk=kb.chunks[idx], score=float(similarities[idx]))
         for idx in top_indices
     ]
 
 
-def search_multi(kb: KnowledgeBase, queries: list[str], top_k: int = 8) -> list[SearchResult]:
+def search_multi(kb: KnowledgeBase, queries: list[str], top_k: int = 6) -> list[SearchResult]:
     """Search with multiple queries, deduplicate and rank by best score."""
-    if kb.embeddings is None or len(kb.chunks) == 0:
+    normed = kb.embeddings_normed
+    if normed is None or len(kb.chunks) == 0:
         return []
 
     response = kb.client.embeddings.create(model=EMBEDDING_MODEL, input=queries)
     q_vecs = np.array([d.embedding for d in response.data], dtype=np.float32)
+    q_norms = np.linalg.norm(q_vecs, axis=1, keepdims=True)
+    q_vecs /= q_norms + 1e-10
 
-    norms = np.linalg.norm(kb.embeddings, axis=1)
+    all_sims = normed @ q_vecs.T
+    max_sims = all_sims.max(axis=1)
 
-    best_score: dict[int, float] = {}
-    for q_vec in q_vecs:
-        q_norm = np.linalg.norm(q_vec)
-        sims = (kb.embeddings @ q_vec) / (norms * q_norm + 1e-10)
-        for idx in np.argsort(sims)[::-1][:top_k]:
-            score = float(sims[idx])
-            if idx not in best_score or score > best_score[idx]:
-                best_score[idx] = score
-
-    ranked = sorted(best_score.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    return [SearchResult(chunk=kb.chunks[idx], score=score) for idx, score in ranked]
+    top_indices = np.argpartition(-max_sims, top_k)[:top_k]
+    top_indices = top_indices[np.argsort(-max_sims[top_indices])]
+    return [
+        SearchResult(chunk=kb.chunks[idx], score=float(max_sims[idx]))
+        for idx in top_indices
+    ]
 
 
 def read_chunk(kb: KnowledgeBase, chunk_id: int) -> DocumentChunk | None:
@@ -439,12 +446,15 @@ def get_document_section(
         section_match = sec_kw in heading_text or sec_kw in chunk.text[:300].lower()
         if label_match and section_match:
             matches.append(chunk)
-    return matches[:12]
+    return matches[:8]
 
 
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------
+
+_MAX_RESULT_CHARS = 1200
+
 
 def format_search_results(results: list[SearchResult]) -> str:
     if not results:
@@ -453,11 +463,13 @@ def format_search_results(results: list[SearchResult]) -> str:
     parts: list[str] = []
     for i, r in enumerate(results, 1):
         heading = " > ".join(r.chunk.heading_path)
+        text = r.chunk.text
+        if len(text) > _MAX_RESULT_CHARS:
+            text = text[:_MAX_RESULT_CHARS] + " …[zkráceno, použij read_chunks pro celý text]"
         parts.append(
-            f"--- Výsledek {i} (relevance: {r.score:.2f}, chunk_id: {r.chunk.chunk_id}) ---\n"
-            f"Dokument: {r.chunk.doc_label}\n"
-            f"Sekce: {heading}\n\n"
-            f"{r.chunk.text}\n"
+            f"--- {i} (rel:{r.score:.2f}, id:{r.chunk.chunk_id}) ---\n"
+            f"{r.chunk.doc_label} | {heading}\n\n"
+            f"{text}\n"
         )
     return "\n".join(parts)
 

@@ -11,31 +11,31 @@ export const FACR_CHATKIT_API_URL =
   import.meta.env.VITE_FACR_CHATKIT_API_URL ?? `${FACR_API_BASE}/chatkit`;
 
 export const FACR_GREETING =
-  "Dobrý den! Jsem AI asistent FAČR. Pomohu vám s otázkami ohledně pravidel, předpisů a řádů českého fotbalu.";
+  "Ahoj! Jsem Lvíček, tvůj AI průvodce světem českého fotbalu. Znám všechny předpisy, řády a pravidla FAČR – zeptej se mě na cokoliv!";
 
 export const FACR_PROMPTS: StartScreenPrompt[] = [
   {
-    label: "Pravidla přestupů hráčů",
+    label: "Přestupy hráčů",
     prompt:
       "Jaká jsou pravidla pro přestup hráče mezi kluby podle Přestupního řádu FAČR?",
     icon: "document",
   },
   {
-    label: "Disciplinární řízení",
+    label: "Disciplinární tresty",
     prompt:
-      "Jaké druhy disciplinárních trestů existují podle Disciplinárního řádu FAČR a jaký je postup při disciplinárním řízení?",
+      "Jaké druhy disciplinárních trestů existují podle Disciplinárního řádu FAČR?",
     icon: "notebook",
   },
   {
-    label: "Licence fotbalového agenta",
+    label: "Fotbaloví agenti",
     prompt:
       "Jaké jsou podmínky pro získání licence fotbalového agenta podle Řádu agentů FAČR?",
     icon: "profile",
   },
   {
-    label: "Sazebník odměn rozhodčích",
+    label: "Odměny rozhodčích",
     prompt:
-      "Jaké jsou odměny rozhodčích a delegátů v první a druhé lize podle aktuálního sazebníku odměn FAČR?",
+      "Jaké jsou odměny rozhodčích a delegátů podle aktuálního sazebníku FAČR?",
     icon: "sparkle",
   },
 ];

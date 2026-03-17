@@ -1,8 +1,8 @@
-"""FAČR knowledge-base agent with advanced retrieval tools."""
+"""FAČR knowledge-base agent with advanced retrieval and web tools."""
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from agents import Agent, RunContextWrapper, function_tool
 from chatkit.agents import AgentContext
@@ -19,74 +19,42 @@ from .knowledge_base import (
     search,
     search_multi,
 )
+from .web_tools import fetch_facr_page, search_facr_web
 
 FACR_AGENT_INSTRUCTIONS = """\
-Jsi profesionální AI asistent Fotbalové asociace České republiky (FAČR). \
-Pomáháš hráčům, trenérům, agentům, rozhodčím, delegátům, manažerům klubů \
-a všem dalším uživatelům s otázkami týkajícími se českého fotbalu.
+Jsi Lvíček – AI průvodce českým fotbalem od FAČR. Lev je symbolem \
+českého fotbalu. Odpovídáš česky, přátelsky a stručně.
 
-## Tvoje pravidla
+## Pravidla
+- Odpovídej VÝHRADNĚ z KB dokumentů nebo webu FAČR. Nevymýšlej.
+- Cituj zdroj (dokument, článek, odstavec).
+- Buď stručný. Složité odpovědi strukturuj odrážkami.
+- Pokud nevíš → přiznej a doporuč kontaktovat FAČR.
+- Nenahrazuješ právní poradenství.
 
-1. **Výhradně používej znalostní bázi** – odpovídej POUZE na základě \
-   informací z oficiálních dokumentů FAČR. NIKDY nevymýšlej informace.
-2. **Cituj zdroje** – ve své odpovědi uveď, z jakého dokumentu a sekce \
-   informace pochází (např. „Podle čl. 15 odst. 3 Přestupního řádu FAČR…").
-3. **Komunikuj česky** – vždy odpovídej v češtině, pokud uživatel \
-   výslovně nepožádá o jiný jazyk.
-4. **Buď stručný a přesný** – odpovídej jasně a srozumitelně. Pokud je \
-   otázka složitá, strukturuj odpověď pomocí odrážek nebo seznamu.
-5. **Pokud nevíš, řekni to** – pokud informace není v dokumentech, \
-   upřímně to přiznej a doporuč kontaktovat FAČR přímo.
-6. **Neposkytuj právní rady** – upozorni uživatele, že tvé odpovědi \
-   jsou informativního charakteru a nenahrazují právní poradenství.
+## Jak hledat (RYCHLE!)
+1. **Začni JEDNÍM voláním `search_knowledge_base`** s výstižným dotazem.
+2. Pokud výsledky stačí → IHNED odpověz. Nevolej další nástroje zbytečně.
+3. Pouze pokud výsledky nestačí → použij `read_chunks` pro širší kontext \
+   nebo `search_multi_query` pro jiné formulace.
+4. Pro kontakty: hledej v KB „kontakt + téma". Pouze pokud nenajdeš, \
+   použij `browse_facr_website` s URL „/facr/kontakty/p68".
+5. Web nástroje (`browse/search_facr_website`) používej jen když KB nestačí.
 
-## Strategie vyhledávání (DŮLEŽITÉ!)
-
-Dokumenty FAČR jsou velmi dlouhé (stovky článků). Vždy postupuj takto:
-
-### Krok 1: Identifikace dokumentu
-- Pokud uživatel zmiňuje konkrétní téma (přestupy, disciplinární řízení, \
-  agenti atd.), začni voláním `document_toc` s klíčovým slovem dokumentu.
-- Tím získáš obsah (TOC) dokumentu se všemi sekcemi a jejich chunk_id.
-
-### Krok 2: Cílené vyhledávání
-- Zavolej `search_knowledge_base` s přesným dotazem.
-- Pro složité dotazy použij `search_multi_query` s více variantami dotazu \
-  (např. česky + právnický termín + zkratka).
-
-### Krok 3: Procházení kontextu
-- Pokud nalezený chunk nestačí, použij `read_chunks` s chunk_id + okolní \
-  chunky (before/after) pro načtení okolního kontextu.
-- Každý výsledek obsahuje `chunk_id` — použij ho k navigaci.
-
-### Krok 4: Upřesnění
-- Pokud odpověď vyžaduje informace z více sekcí, opakuj hledání s \
-  upřesněnými dotazy nebo procházej další sekce přes TOC.
-
-## Dostupné nástroje
-
-- `search_knowledge_base(query)` — sémantické hledání (vrací 8 výsledků)
-- `search_multi_query(queries)` — hledání s více dotazy najednou
-- `document_toc(document_keyword)` — obsah dokumentu se všemi sekcemi
-- `read_chunks(chunk_id, before, after)` — čtení konkrétní sekce + okolí
-- `get_section(document_keyword, section_keyword)` — přímé hledání sekce
-- `list_documents()` — seznam všech dokumentů
-
-## Styl komunikace
-
-- Oslovuj uživatele zdvořile (vykání)
-- Používej odbornou fotbalovou terminologii
-- U složitých odpovědí uváděj strukturovaný přehled s odkazy na články
+## Styl
+- Přátelsky, profesionálně, česky. Tykej/vykej dle kontextu.
+- Představuj se jako Lvíček.
+- Kontakty uváděj přehledně: jméno, pozice, e-mail, telefon.
 """.strip()
 
 
 def build_facr_agent(kb: KnowledgeBase) -> Agent[AgentContext]:
-    """Create the FAČR knowledge-base agent with advanced retrieval tools."""
+    """Create the FAČR knowledge-base agent with retrieval and web tools."""
 
     @function_tool(
         description_override=(
-            "Sémantické vyhledávání ve znalostní bázi FAČR. "
-            "Vrací 8 nejrelevantnějších úryvků. "
+            "Sémantické vyhledávání ve znalostní bázi FAČR (dokumenty, řády, "
+            "předpisy, kontakty). Vrací 8 nejrelevantnějších úryvků. "
             "Každý výsledek obsahuje chunk_id pro další navigaci."
         ),
     )
@@ -115,7 +83,7 @@ def build_facr_agent(kb: KnowledgeBase) -> Agent[AgentContext]:
         description_override=(
             "Vrátí obsah (table of contents) konkrétního dokumentu FAČR. "
             "Zadej klíčové slovo dokumentu (např. 'přestupní', 'disciplinární', "
-            "'agent', 'trenér', 'stanovy', 'soutěžní', 'registrační'). "
+            "'agent', 'trenér', 'stanovy', 'soutěžní', 'registrační', 'kontakt'). "
             "Výsledek obsahuje seznam všech sekcí s chunk_id pro navigaci."
         ),
     )
@@ -172,9 +140,42 @@ def build_facr_agent(kb: KnowledgeBase) -> Agent[AgentContext]:
     ) -> Dict[str, str]:
         return {"documents": format_document_list(kb)}
 
+    @function_tool(
+        description_override=(
+            "Načte stránku z oficiálního webu FAČR (fotbal.cz). "
+            "Zadej URL cestu jako '/facr/kontakty/p68' pro kontakty, "
+            "'/facr/organizacni-struktura-a-organy-facr' pro strukturu, "
+            "'/facr/pravni-servis/predpisy/soubor-predpisu' pro předpisy, "
+            "nebo celou URL začínající 'https://www.fotbal.cz/...'. "
+            "Vrací textový obsah stránky a seznam odkazů. "
+            "POUŽÍVEJ pro kontakty, aktuální organizační info, nebo "
+            "když uživatel odkazuje na konkrétní stránku fotbal.cz."
+        ),
+    )
+    async def browse_facr_website(
+        ctx: RunContextWrapper[AgentContext],
+        url: str,
+    ) -> Dict[str, Any]:
+        return await fetch_facr_page(url)
+
+    @function_tool(
+        description_override=(
+            "Vyhledá relevantní stránku na webu FAČR (fotbal.cz) podle "
+            "klíčového slova. Vhodné pro hledání kontaktů, organizační "
+            "struktury, aktualit, předpisů, reprezentace atd. "
+            "Příklady: 'kontakty', 'předpisy', 'výkonný výbor', 'komise', "
+            "'přestupy', 'vstupenky', 'reprezentace', 'integrity'."
+        ),
+    )
+    async def search_facr_website(
+        ctx: RunContextWrapper[AgentContext],
+        query: str,
+    ) -> Dict[str, Any]:
+        return await search_facr_web(query)
+
     return Agent[AgentContext](
         model="gpt-5.4",
-        name="FAČR Asistent",
+        name="Lvíček",
         instructions=FACR_AGENT_INSTRUCTIONS,
         tools=[
             search_knowledge_base,
@@ -183,5 +184,7 @@ def build_facr_agent(kb: KnowledgeBase) -> Agent[AgentContext]:
             read_chunks,
             get_section,
             list_documents,
+            browse_facr_website,
+            search_facr_website,
         ],  # type: ignore[arg-type]
     )

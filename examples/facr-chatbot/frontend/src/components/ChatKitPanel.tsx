@@ -23,12 +23,12 @@ export function ChatKitPanel({ theme }: ChatKitPanelProps) {
       color: {
         grayscale: {
           hue: 220,
-          tint: theme === "dark" ? 4 : 7,
-          shade: theme === "dark" ? -2 : -3,
+          tint: theme === "dark" ? 2 : 9,
+          shade: theme === "dark" ? -3 : -1,
         },
         accent: {
-          primary: theme === "dark" ? "#60a5fa" : "#003087",
-          level: 2,
+          primary: theme === "dark" ? "#2563eb" : "#003087",
+          level: 3,
         },
       },
       radius: "round",
@@ -38,7 +38,7 @@ export function ChatKitPanel({ theme }: ChatKitPanelProps) {
       prompts: FACR_PROMPTS,
     },
     composer: {
-      placeholder: "Zeptejte se na cokoliv ohledně pravidel FAČR…",
+      placeholder: "Zeptej se Lvíčka na cokoliv o českém fotbalu…",
     },
     threadItemActions: {
       feedback: false,

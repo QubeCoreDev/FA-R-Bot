@@ -6,9 +6,9 @@ type PitchBackgroundProps = {
 
 export function PitchBackground({ theme }: PitchBackgroundProps) {
   const stroke =
-    theme === "dark" ? "rgba(59,130,246,0.12)" : "rgba(0,48,135,0.10)";
-  const strokeLight =
-    theme === "dark" ? "rgba(59,130,246,0.06)" : "rgba(0,48,135,0.05)";
+    theme === "dark" ? "rgba(0,48,135,0.18)" : "rgba(0,48,135,0.07)";
+  const strokeFaint =
+    theme === "dark" ? "rgba(0,48,135,0.10)" : "rgba(0,48,135,0.04)";
 
   return (
     <>
@@ -18,27 +18,23 @@ export function PitchBackground({ theme }: PitchBackgroundProps) {
         viewBox="0 0 1000 800"
         preserveAspectRatio="xMidYMid slice"
       >
-        {/* Center circle */}
         <circle
           cx="500"
           cy="400"
           r="120"
           fill="none"
           stroke={stroke}
-          strokeWidth="2"
+          strokeWidth="1.5"
         />
-        {/* Center dot */}
-        <circle cx="500" cy="400" r="5" fill={stroke} />
-        {/* Halfway line */}
+        <circle cx="500" cy="400" r="4" fill={stroke} />
         <line
           x1="0"
           y1="400"
           x2="1000"
           y2="400"
           stroke={stroke}
-          strokeWidth="2"
+          strokeWidth="1.5"
         />
-        {/* Top penalty box */}
         <rect
           x="300"
           y="0"
@@ -46,28 +42,24 @@ export function PitchBackground({ theme }: PitchBackgroundProps) {
           height="140"
           fill="none"
           stroke={stroke}
-          strokeWidth="1.5"
+          strokeWidth="1.2"
         />
-        {/* Top goal box */}
         <rect
           x="380"
           y="0"
           width="240"
           height="55"
           fill="none"
-          stroke={strokeLight}
-          strokeWidth="1.2"
+          stroke={strokeFaint}
+          strokeWidth="1"
         />
-        {/* Top penalty arc */}
         <path
           d="M 380 140 Q 500 195 620 140"
           fill="none"
-          stroke={strokeLight}
-          strokeWidth="1.2"
+          stroke={strokeFaint}
+          strokeWidth="1"
         />
-        {/* Top penalty spot */}
-        <circle cx="500" cy="110" r="3" fill={strokeLight} />
-        {/* Bottom penalty box */}
+        <circle cx="500" cy="110" r="2.5" fill={strokeFaint} />
         <rect
           x="300"
           y="660"
@@ -75,53 +67,28 @@ export function PitchBackground({ theme }: PitchBackgroundProps) {
           height="140"
           fill="none"
           stroke={stroke}
-          strokeWidth="1.5"
+          strokeWidth="1.2"
         />
-        {/* Bottom goal box */}
         <rect
           x="380"
           y="745"
           width="240"
           height="55"
           fill="none"
-          stroke={strokeLight}
-          strokeWidth="1.2"
+          stroke={strokeFaint}
+          strokeWidth="1"
         />
-        {/* Bottom penalty arc */}
         <path
           d="M 380 660 Q 500 605 620 660"
           fill="none"
-          stroke={strokeLight}
-          strokeWidth="1.2"
+          stroke={strokeFaint}
+          strokeWidth="1"
         />
-        {/* Bottom penalty spot */}
-        <circle cx="500" cy="690" r="3" fill={strokeLight} />
-        {/* Corner arcs */}
-        <path
-          d="M 0 25 A 25 25 0 0 1 25 0"
-          fill="none"
-          stroke={stroke}
-          strokeWidth="1.2"
-        />
-        <path
-          d="M 975 0 A 25 25 0 0 1 1000 25"
-          fill="none"
-          stroke={stroke}
-          strokeWidth="1.2"
-        />
-        <path
-          d="M 0 775 A 25 25 0 0 0 25 800"
-          fill="none"
-          stroke={stroke}
-          strokeWidth="1.2"
-        />
-        <path
-          d="M 975 800 A 25 25 0 0 0 1000 775"
-          fill="none"
-          stroke={stroke}
-          strokeWidth="1.2"
-        />
-        {/* Outer boundary */}
+        <circle cx="500" cy="690" r="2.5" fill={strokeFaint} />
+        <path d="M 0 22 A 22 22 0 0 1 22 0" fill="none" stroke={strokeFaint} strokeWidth="1" />
+        <path d="M 978 0 A 22 22 0 0 1 1000 22" fill="none" stroke={strokeFaint} strokeWidth="1" />
+        <path d="M 0 778 A 22 22 0 0 0 22 800" fill="none" stroke={strokeFaint} strokeWidth="1" />
+        <path d="M 978 800 A 22 22 0 0 0 1000 778" fill="none" stroke={strokeFaint} strokeWidth="1" />
         <rect
           x="2"
           y="2"
@@ -129,7 +96,7 @@ export function PitchBackground({ theme }: PitchBackgroundProps) {
           height="796"
           fill="none"
           stroke={stroke}
-          strokeWidth="2.5"
+          strokeWidth="2"
           rx="3"
         />
       </svg>

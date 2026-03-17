@@ -2,6 +2,7 @@ import { Moon, Sun } from "lucide-react";
 
 import { ChatKitPanel } from "./components/ChatKitPanel";
 import { FacrBadge } from "./components/FacrBadge";
+import { FootballDecorations } from "./components/FootballDecorations";
 import { PitchBackground } from "./components/PitchBackground";
 import { useColorScheme } from "./hooks/useColorScheme";
 
@@ -15,15 +16,20 @@ export default function App() {
         <header className="app-header">
           <div className="header-content">
             <div className="facr-badge">
-              <FacrBadge size={48} />
+              <FacrBadge size={44} />
             </div>
             <div className="header-text">
-              <div className="app-title">FAČR Asistent</div>
+              <div className="app-title">
+                <span className="title-lion">Lvíček</span>
+                <span className="title-separator">|</span>
+                <span className="title-facr">FAČR</span>
+              </div>
               <div className="app-subtitle">
-                Fotbalová asociace České republiky
+                AI Průvodce českým fotbalem
               </div>
             </div>
           </div>
+          <FootballDecorations className="header-deco" />
           <div className="header-actions">
             <button
               className="theme-toggle-btn"
@@ -42,9 +48,9 @@ export default function App() {
           <ChatKitPanel theme={scheme} />
         </div>
         <footer className="app-footer">
-          <span className="footer-dot" />
+          <span className="footer-lion-paw">🦁</span>
           <span className="footer-text">
-            Oficiální AI asistent{" "}
+            Lvíček – oficiální AI asistent{" "}
             <a
               href="https://facr.fotbal.cz"
               target="_blank"
@@ -53,9 +59,9 @@ export default function App() {
             >
               FAČR
             </a>{" "}
-            &middot; Odpovědi vychází z oficiálních dokumentů a řádů
+            &middot; Odpovědi vychází z oficiálních dokumentů
           </span>
-          <span className="footer-dot" />
+          <span className="footer-ball">⚽</span>
         </footer>
       </div>
     </div>
